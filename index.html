@@ -83,23 +83,23 @@
       let orientation = window.orientation || 0;
       switch(orientation) {
         case 0:
-          accelData.x = rawX;
+          accelData.x = -rawX;
           accelData.y = rawY;
           break;
         case 180:
-          accelData.x = -rawX;
+          accelData.x = rawX;
           accelData.y = -rawY;
           break;
         case 90:
-          accelData.x = -rawY;
+          accelData.x = rawY;
           accelData.y = rawX;
           break;
         case -90:
-          accelData.x = rawY;
-          accelData.y = -rawX;
+          accelData.x = -rawY;
+          accelData.y = rawX;
           break;
         default:
-          accelData.x = rawX;
+          accelData.x = -rawX;
           accelData.y = rawY;
       }
 
