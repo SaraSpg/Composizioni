@@ -17,10 +17,10 @@
 
     let squares = [];            // quadrati correnti
     let originalSquares = [];    // posizioni originali da data.json
-    let hasAccelerometer = false;
     let accelData = { x: 0, y: 0, z: 0 };
-    let simulateGravity = false; // modalità gravità simulata
+    let simulateGravity = false; // modalità gravità simulata (barra spazio)
     let restoring = false;       // modalità ritorno all'origine
+    const accelThreshold = 5;    // soglia accelerazione per iniziare movimento
 
     // --- Disegno continuo dei quadrati ---
     function draw() {
@@ -36,10 +36,16 @@
 
     // --- Aggiorna posizione dei quadrati ---
     function updateSquares() {
-      let gx = accelData.x;
-      let gy = accelData.y;
-      let gz = accelData.z;
+      let gx = 0, gy = 0, gz = 0;
 
+      // Movimento solo se accelerazione supera soglia
+      if (Math.abs(accelData.x) > accelThreshold || Math.abs(accelData.y) > accelThreshold) {
+        gx = accelData.x;
+        gy = accelData.y;
+        gz = accelData.z || 0;
+      }
+
+      // Se stiamo simulando gravità da tastiera
       if (simulateGravity) {
         gz = 9.8 * 4; // simulazione di 1g amplificato
       }
@@ -59,10 +65,8 @@
         }
 
         // mantieni i quadrati dentro i bordi del canvas
-        if (sq.x < 0) sq.x = 0;
-        if (sq.x > canvas.width - sq.size) sq.x = canvas.width - sq.size;
-        if (sq.y < 0) sq.y = 0;
-        if (sq.y > canvas.height - sq.size) sq.y = canvas.height - sq.size;
+        sq.x = Math.max(0, Math.min(canvas.width - sq.size, sq.x));
+        sq.y = Math.max(0, Math.min(canvas.height - sq.size, sq.y));
       }
 
       requestAnimationFrame(updateSquares);
@@ -74,24 +78,18 @@
       accelData.x = acc.x || 0;
       accelData.y = acc.y || 0;
       accelData.z = acc.z || 0;
-
-      if (accelData.x !== 0 || accelData.y !== 0 || accelData.z !== 0) {
-        hasAccelerometer = true;
-      }
     }
 
     // --- Gestione barra spaziatrice ---
     function handleKey(event) {
       if (event.code === "Space") {
         if (!simulateGravity && !restoring) {
-          // Attiva modalità gravità (decomposizione)
           simulateGravity = true;
           restoring = false;
         } else {
-          // Disattiva gravità e ripristina gradualmente
           simulateGravity = false;
           restoring = true;
-          // Dopo 2 secondi termina il ritorno (per stabilità)
+          // dopo 2 secondi termina il ritorno
           setTimeout(() => restoring = false, 2000);
         }
       }
@@ -115,7 +113,7 @@
         draw();
         updateSquares();
 
-        console.log("Premi la barra spaziatrice per simulare la gravità o ricomporre l'opera.");
+        console.log("Premi la barra spaziatrice per simulare gravità o ricomporre l'opera.");
       } catch (err) {
         console.error("Errore caricamento dati:", err);
       }
