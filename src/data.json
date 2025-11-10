@@ -1,0 +1,9 @@
+{
+  "pageTitle": "Composizione in Blu Maggiore",
+  "squares": [
+    {"x":100, "y":100, "size":50, "color":"red"},
+    {"x":200, "y":150, "size":50, "color":"blue"},
+    {"x":300, "y":200, "size":80, "color":"green"},
+    {"x":400, "y":250, "size":60, "color":"yellow"}
+  ]
+}

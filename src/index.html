@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading...</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let squares = [];            // quadrati correnti
+    let originalSquares = [];    // posizioni originali da data.json
+    let hasAccelerometer = false;
+    let accelData = { x: 0, y: 0, z: 0 };
+    let simulateGravity = false; // modalità gravità simulata
+    let restoring = false;       // modalità ritorno all'origine
+
+    // --- Disegno continuo dei quadrati ---
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const sq of squares) {
+        ctx.fillStyle = sq.color;
+        ctx.fillRect(sq.x, sq.y, sq.size, sq.size);
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    // --- Aggiorna posizione dei quadrati ---
+    function updateSquares() {
+      let gx = accelData.x;
+      let gy = accelData.y;
+      let gz = accelData.z;
+
+      if (simulateGravity) {
+        gz = 9.8 * 4; // simulazione di 1g amplificato
+      }
+
+      for (let i = 0; i < squares.length; i++) {
+        const sq = squares[i];
+        const ref = originalSquares[i]; // riferimento posizione originale
+
+        if (restoring) {
+          // ritorno graduale alla posizione originale
+          sq.x += (ref.x - sq.x) * 0.08;
+          sq.y += (ref.y - sq.y) * 0.08;
+        } else {
+          // movimento libero o gravitazionale
+          sq.x += gx;
+          sq.y += gy + gz * 0.5;
+        }
+
+        // mantieni i quadrati dentro i bordi del canvas
+        if (sq.x < 0) sq.x = 0;
+        if (sq.x > canvas.width - sq.size) sq.x = canvas.width - sq.size;
+        if (sq.y < 0) sq.y = 0;
+        if (sq.y > canvas.height - sq.size) sq.y = canvas.height - sq.size;
+      }
+
+      requestAnimationFrame(updateSquares);
+    }
+
+    // --- Lettura accelerometro ---
+    function handleMotion(event) {
+      const acc = event.accelerationIncludingGravity;
+      accelData.x = acc.x || 0;
+      accelData.y = acc.y || 0;
+      accelData.z = acc.z || 0;
+
+      if (accelData.x !== 0 || accelData.y !== 0 || accelData.z !== 0) {
+        hasAccelerometer = true;
+      }
+    }
+
+    // --- Gestione barra spaziatrice ---
+    function handleKey(event) {
+      if (event.code === "Space") {
+        if (!simulateGravity && !restoring) {
+          // Attiva modalità gravità (decomposizione)
+          simulateGravity = true;
+          restoring = false;
+        } else {
+          // Disattiva gravità e ripristina gradualmente
+          simulateGravity = false;
+          restoring = true;
+          // Dopo 2 secondi termina il ritorno (per stabilità)
+          setTimeout(() => restoring = false, 2000);
+        }
+      }
+    }
+
+    // --- Caricamento dati esterni ---
+    async function loadData() {
+      try {
+        const response = await fetch("data.json");
+        const data = await response.json();
+
+        document.title = data.pageTitle;
+
+        // salva copia originale e copia modificabile
+        originalSquares = JSON.parse(JSON.stringify(data.squares));
+        squares = JSON.parse(JSON.stringify(data.squares));
+
+        window.addEventListener("devicemotion", handleMotion);
+        window.addEventListener("keydown", handleKey);
+
+        draw();
+        updateSquares();
+
+        console.log("Premi la barra spaziatrice per simulare la gravità o ricomporre l'opera.");
+      } catch (err) {
+        console.error("Errore caricamento dati:", err);
+      }
+    }
+
+    window.onload = loadData;
+
+    // --- Adatta il canvas alla finestra ---
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>

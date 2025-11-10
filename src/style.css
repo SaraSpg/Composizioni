@@ -1,0 +1,12 @@
+/* Rimuove margini e scrollbar */
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000000; 
+}
+/* Canvas a tutto schermo */
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
