@@ -7,145 +7,145 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <canvas id="canvas"></canvas>
+<canvas id="canvas"></canvas>
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-    let squares = [];
-    let originalSquares = [];
-    let accelData = { x: 0, y: 0, z: 0 };
-    let simulateGravity = false;
-    let restoring = false;
-    const accelThreshold = 1.5;
-    let movementActive = false;
+let squares = [];
+let originalSquares = [];
+let accelData = { x: 0, y: 0, z: 0 };
+let simulateGravity = false;
+let restoring = false;
+const accelThreshold = 1.5;
+let movementActive = false;
 
-    // --- Disegno ---
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const sq of squares) {
-        ctx.fillStyle = sq.color;
-        ctx.fillRect(sq.x, sq.y, sq.size, sq.size);
-      }
-      requestAnimationFrame(draw);
-    }
+// --- Disegno ---
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const sq of squares) {
+    ctx.fillStyle = sq.color;
+    ctx.fillRect(sq.x, sq.y, sq.size, sq.size);
+  }
+  requestAnimationFrame(draw);
+}
 
-    // --- Aggiornamento ---
-    function updateSquares() {
-      let gx = 0, gy = 0, gz = 0;
+// --- Aggiornamento ---
+function updateSquares() {
+  let gx = 0, gy = 0, gz = 0;
 
-      // Attiva movimento permanente se accelerazione supera soglia
-      if (!movementActive) {
-        if (Math.abs(accelData.x) > accelThreshold || 
-            Math.abs(accelData.y) > accelThreshold || 
-            Math.abs(accelData.z) > accelThreshold) {
-          movementActive = true;
-        }
-      }
-
-      if (movementActive) {
-        gx = accelData.x;
-        gy = accelData.y;
-        gz = accelData.z || 0;
-      }
-
-      if (simulateGravity) {
-        gz = 9.8 * 4;
-        movementActive = true;
-      }
-
-      for (let i = 0; i < squares.length; i++) {
-        const sq = squares[i];
-        const ref = originalSquares[i];
-
-        if (restoring) {
-          sq.x += (ref.x - sq.x) * 0.08;
-          sq.y += (ref.y - sq.y) * 0.08;
-        } else {
-          sq.x += gx;
-          sq.y += gz; // Z = verticale
-        }
-
-        // Limiti canvas
-        sq.x = Math.max(0, Math.min(canvas.width - sq.size, sq.x));
-        sq.y = Math.max(0, Math.min(canvas.height - sq.size, sq.y));
-      }
-
-      requestAnimationFrame(updateSquares);
-    }
-
-    // --- Accelerometro ---
-    function handleMotion(event) {
-      const acc = event.accelerationIncludingGravity;
-      let rawX = acc.x || 0;
-      let rawY = acc.y || 0;
-      let rawZ = acc.z || 0;
-
-      let orientation = window.orientation || 0;
-      switch(orientation) {
-        case 0:    accelData.x = -rawX; accelData.y = rawY; break;
-        case 180:  accelData.x = rawX;  accelData.y = -rawY; break;
-        case 90:   accelData.x = rawY;  accelData.y = rawX; break;
-        case -90:  accelData.x = -rawY; accelData.y = rawX; break;
-        default:   accelData.x = -rawX; accelData.y = rawY;
-      }
-      accelData.z = rawZ;
-    }
-
-    // --- Barra spazio ---
-    function handleKey(event) {
-      if (event.code === "Space") {
-        if (!simulateGravity && !restoring) {
-          simulateGravity = true;
-          restoring = false;
-        } else {
-          simulateGravity = false;
-          restoring = true;
-          setTimeout(() => restoring = false, 2000);
-        }
-      }
-    }
-
-    // --- Touch ---
-    canvas.addEventListener("touchstart", () => {
-      restoring = true;
-    });
-
-    canvas.addEventListener("touchend", () => {
-      restoring = false;
+  if (!movementActive) {
+    if (Math.abs(accelData.x) > accelThreshold || 
+        Math.abs(accelData.y) > accelThreshold || 
+        Math.abs(accelData.z) > accelThreshold) {
       movementActive = true;
-    });
+    }
+  }
 
-    // --- Caricamento dati ---
-    async function loadData() {
-      try {
-        const response = await fetch("data.json");
-        const data = await response.json();
-        document.title = data.pageTitle;
+  if (movementActive) {
+    gx = accelData.x;
+    gy = accelData.y;
+    gz = accelData.z || 0;
+  }
 
-        originalSquares = JSON.parse(JSON.stringify(data.squares));
-        squares = JSON.parse(JSON.stringify(data.squares));
+  if (simulateGravity) {
+    gz = 9.8 * 4;
+    movementActive = true;
+  }
 
-        window.addEventListener("devicemotion", handleMotion);
-        window.addEventListener("keydown", handleKey);
+  for (let i = 0; i < squares.length; i++) {
+    const sq = squares[i];
+    const ref = originalSquares[i];
 
-        draw();
-        updateSquares();
-      } catch (err) {
-        console.error("Errore caricamento dati:", err);
-      }
+    if (restoring) {
+      sq.x += (ref.x - sq.x) * 0.08;
+      sq.y += (ref.y - sq.y) * 0.08;
+    } else {
+      // X/Y piano orizzontale come prima, Z verticale separato
+      sq.x += gx;
+      sq.y += gz; // solo Z per verticale
     }
 
-    window.onload = loadData;
+    // Limiti canvas
+    sq.x = Math.max(0, Math.min(canvas.width - sq.size, sq.x));
+    sq.y = Math.max(0, Math.min(canvas.height - sq.size, sq.y));
+  }
 
-    // --- Resize ---
-    window.addEventListener("resize", () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    });
-  </script>
+  requestAnimationFrame(updateSquares);
+}
+
+// --- Accelerometro ---
+function handleMotion(event) {
+  const acc = event.accelerationIncludingGravity;
+  let rawX = acc.x || 0;
+  let rawY = acc.y || 0;
+  let rawZ = acc.z || 0;
+
+  let orientation = window.orientation || 0;
+  switch(orientation) {
+    case 0:    accelData.x = -rawX; accelData.y = rawY; break;
+    case 180:  accelData.x = rawX;  accelData.y = -rawY; break;
+    case 90:   accelData.x = rawY;  accelData.y = rawX; break;
+    case -90:  accelData.x = -rawY; accelData.y = rawX; break;
+    default:   accelData.x = -rawX; accelData.y = rawY;
+  }
+  accelData.z = rawZ; // verticale
+}
+
+// --- Barra spazio ---
+function handleKey(event) {
+  if (event.code === "Space") {
+    if (!simulateGravity && !restoring) {
+      simulateGravity = true;
+      restoring = false;
+    } else {
+      simulateGravity = false;
+      restoring = true;
+      setTimeout(() => restoring = false, 2000);
+    }
+  }
+}
+
+// --- Touch globale ---
+window.addEventListener("touchstart", () => {
+  restoring = true;
+});
+
+window.addEventListener("touchend", () => {
+  restoring = false;
+  movementActive = true;
+});
+
+// --- Caricamento dati ---
+async function loadData() {
+  try {
+    const response = await fetch("data.json");
+    const data = await response.json();
+    document.title = data.pageTitle;
+
+    originalSquares = JSON.parse(JSON.stringify(data.squares));
+    squares = JSON.parse(JSON.stringify(data.squares));
+
+    window.addEventListener("devicemotion", handleMotion);
+    window.addEventListener("keydown", handleKey);
+
+    draw();
+    updateSquares();
+  } catch (err) {
+    console.error("Errore caricamento dati:", err);
+  }
+}
+
+window.onload = loadData;
+
+// --- Resize ---
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
 </body>
 </html>
