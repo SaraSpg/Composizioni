@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Loading...</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <canvas id="canvas"></canvas>
 
@@ -20,8 +22,8 @@
     let accelData = { x: 0, y: 0, z: 0 };
     let simulateGravity = false; // modalità gravità simulata (barra spazio)
     let restoring = false;       // modalità ritorno all'origine
-    const accelThreshold = 15;   // soglia accelerazione per iniziare movimento
-    let movementActive = false;  // flag per attivare movimento dopo la prima soglia
+    const accelThreshold = 12;   // soglia accelerazione per iniziare movimento
+    let movementActive = true;  // flag per attivare movimento dopo la prima soglia
 
     // --- Disegno continuo dei quadrati ---
     function draw() {
@@ -41,7 +43,7 @@
 
       // Movimento solo se accelerazione supera soglia o se la flag è attiva
       if (!movementActive) {
-        if (Math.abs(accelData.x) > accelThreshold || Math.abs(accelData.y) > accelThreshold) {
+        if (Math.abs(accelData.x) > accelThreshold || Math.abs(accelData.y) > accelThreshold || Math.abs(accelData.z) > accelThreshold) {
           movementActive = true; // attiva movimento permanente
         }
       }
@@ -135,4 +137,5 @@
     });
   </script>
 </body>
+
 </html>
