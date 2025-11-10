@@ -23,6 +23,7 @@
     const accelThreshold = 1.5;
     let movementActive = false;
 
+    // --- Disegno ---
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const sq of squares) {
@@ -32,11 +33,15 @@
       requestAnimationFrame(draw);
     }
 
+    // --- Aggiornamento ---
     function updateSquares() {
       let gx = 0, gy = 0, gz = 0;
 
+      // Attiva movimento permanente se accelerazione supera soglia
       if (!movementActive) {
-        if (Math.abs(accelData.x) > accelThreshold || Math.abs(accelData.y) > accelThreshold || Math.abs(accelData.z) > accelThreshold) {
+        if (Math.abs(accelData.x) > accelThreshold || 
+            Math.abs(accelData.y) > accelThreshold || 
+            Math.abs(accelData.z) > accelThreshold) {
           movementActive = true;
         }
       }
@@ -60,12 +65,11 @@
           sq.x += (ref.x - sq.x) * 0.08;
           sq.y += (ref.y - sq.y) * 0.08;
         } else {
-          // X e Y: piano orizzontale
-          sq.x += gx; 
-          sq.y += gz; // Z diventa verticale
+          sq.x += gx;
+          sq.y += gz; // Z = verticale
         }
 
-        // Limita ai bordi
+        // Limiti canvas
         sq.x = Math.max(0, Math.min(canvas.width - sq.size, sq.x));
         sq.y = Math.max(0, Math.min(canvas.height - sq.size, sq.y));
       }
@@ -73,39 +77,25 @@
       requestAnimationFrame(updateSquares);
     }
 
+    // --- Accelerometro ---
     function handleMotion(event) {
       const acc = event.accelerationIncludingGravity;
       let rawX = acc.x || 0;
       let rawY = acc.y || 0;
       let rawZ = acc.z || 0;
 
-      // Normalizzazione orientamento portrait
       let orientation = window.orientation || 0;
       switch(orientation) {
-        case 0:
-          accelData.x = -rawX;
-          accelData.y = rawY;
-          break;
-        case 180:
-          accelData.x = rawX;
-          accelData.y = -rawY;
-          break;
-        case 90:
-          accelData.x = rawY;
-          accelData.y = rawX;
-          break;
-        case -90:
-          accelData.x = -rawY;
-          accelData.y = rawX;
-          break;
-        default:
-          accelData.x = -rawX;
-          accelData.y = rawY;
+        case 0:    accelData.x = -rawX; accelData.y = rawY; break;
+        case 180:  accelData.x = rawX;  accelData.y = -rawY; break;
+        case 90:   accelData.x = rawY;  accelData.y = rawX; break;
+        case -90:  accelData.x = -rawY; accelData.y = rawX; break;
+        default:   accelData.x = -rawX; accelData.y = rawY;
       }
-
-      accelData.z = rawZ; // verticale
+      accelData.z = rawZ;
     }
 
+    // --- Barra spazio ---
     function handleKey(event) {
       if (event.code === "Space") {
         if (!simulateGravity && !restoring) {
@@ -119,6 +109,17 @@
       }
     }
 
+    // --- Touch ---
+    canvas.addEventListener("touchstart", () => {
+      restoring = true;
+    });
+
+    canvas.addEventListener("touchend", () => {
+      restoring = false;
+      movementActive = true;
+    });
+
+    // --- Caricamento dati ---
     async function loadData() {
       try {
         const response = await fetch("data.json");
@@ -140,6 +141,7 @@
 
     window.onload = loadData;
 
+    // --- Resize ---
     window.addEventListener("resize", () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
