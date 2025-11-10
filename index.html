@@ -20,7 +20,8 @@
     let accelData = { x: 0, y: 0, z: 0 };
     let simulateGravity = false; // modalità gravità simulata (barra spazio)
     let restoring = false;       // modalità ritorno all'origine
-    const accelThreshold = 15;    // soglia accelerazione per iniziare movimento
+    const accelThreshold = 15;   // soglia accelerazione per iniziare movimento
+    let movementActive = false;  // flag per attivare movimento dopo la prima soglia
 
     // --- Disegno continuo dei quadrati ---
     function draw() {
@@ -38,8 +39,14 @@
     function updateSquares() {
       let gx = 0, gy = 0, gz = 0;
 
-      // Movimento solo se accelerazione supera soglia
-      if (Math.abs(accelData.x) > accelThreshold || Math.abs(accelData.y) > accelThreshold) {
+      // Movimento solo se accelerazione supera soglia o se la flag è attiva
+      if (!movementActive) {
+        if (Math.abs(accelData.x) > accelThreshold || Math.abs(accelData.y) > accelThreshold) {
+          movementActive = true; // attiva movimento permanente
+        }
+      }
+
+      if (movementActive) {
         gx = accelData.x;
         gy = accelData.y;
         gz = accelData.z || 0;
@@ -48,6 +55,7 @@
       // Se stiamo simulando gravità da tastiera
       if (simulateGravity) {
         gz = 9.8 * 4; // simulazione di 1g amplificato
+        movementActive = true; // attiva il movimento anche da tastiera
       }
 
       for (let i = 0; i < squares.length; i++) {
@@ -61,7 +69,7 @@
         } else {
           // movimento libero o gravitazionale
           sq.x += gx;
-          sq.y += gy + gz * 0.5;
+          sq.y += gy + gz;
         }
 
         // mantieni i quadrati dentro i bordi del canvas
@@ -89,7 +97,6 @@
         } else {
           simulateGravity = false;
           restoring = true;
-          // dopo 2 secondi termina il ritorno
           setTimeout(() => restoring = false, 2000);
         }
       }
