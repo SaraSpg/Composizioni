@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Loading...</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
   <canvas id="canvas"></canvas>
 
@@ -17,64 +15,57 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    let squares = [];            // quadrati correnti
-    let originalSquares = [];    // posizioni originali da data.json
+    let squares = [];
+    let originalSquares = [];
     let accelData = { x: 0, y: 0, z: 0 };
-    let simulateGravity = false; // modalità gravità simulata (barra spazio)
-    let restoring = false;       // modalità ritorno all'origine
-    const accelThreshold = 12;   // soglia accelerazione per iniziare movimento
-    let movementActive = true;  // flag per attivare movimento dopo la prima soglia
+    let simulateGravity = false;
+    let restoring = false;
+    const accelThreshold = 1.5;
+    let movementActive = false;
 
-    // --- Disegno continuo dei quadrati ---
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       for (const sq of squares) {
         ctx.fillStyle = sq.color;
         ctx.fillRect(sq.x, sq.y, sq.size, sq.size);
       }
-
       requestAnimationFrame(draw);
     }
 
-    // --- Aggiorna posizione dei quadrati ---
     function updateSquares() {
       let gx = 0, gy = 0, gz = 0;
 
-      // Movimento solo se accelerazione supera soglia o se la flag è attiva
       if (!movementActive) {
         if (Math.abs(accelData.x) > accelThreshold || Math.abs(accelData.y) > accelThreshold || Math.abs(accelData.z) > accelThreshold) {
-          movementActive = true; // attiva movimento permanente
+          movementActive = true;
         }
       }
 
       if (movementActive) {
-        gx = -accelData.x;
-        gy = -accelData.y;
+        gx = accelData.x;
+        gy = accelData.y;
         gz = accelData.z || 0;
       }
 
-      // Se stiamo simulando gravità da tastiera
       if (simulateGravity) {
-        gz = 9.8 * 4; // simulazione di 1g amplificato
-        movementActive = true; // attiva il movimento anche da tastiera
+        gz = 9.8 * 4;
+        movementActive = true;
       }
 
       for (let i = 0; i < squares.length; i++) {
         const sq = squares[i];
-        const ref = originalSquares[i]; // riferimento posizione originale
+        const ref = originalSquares[i];
 
         if (restoring) {
-          // ritorno graduale alla posizione originale
           sq.x += (ref.x - sq.x) * 0.08;
           sq.y += (ref.y - sq.y) * 0.08;
         } else {
-          // movimento libero o gravitazionale
-          sq.x += gx;
-          sq.y += gy + gz;
+          // X e Y: piano orizzontale
+          sq.x += gx; 
+          sq.y += gz; // Z diventa verticale
         }
 
-        // mantieni i quadrati dentro i bordi del canvas
+        // Limita ai bordi
         sq.x = Math.max(0, Math.min(canvas.width - sq.size, sq.x));
         sq.y = Math.max(0, Math.min(canvas.height - sq.size, sq.y));
       }
@@ -82,15 +73,39 @@
       requestAnimationFrame(updateSquares);
     }
 
-    // --- Lettura accelerometro ---
     function handleMotion(event) {
       const acc = event.accelerationIncludingGravity;
-      accelData.x = acc.x || 0;
-      accelData.y = acc.y || 0;
-      accelData.z = acc.z || 0;
+      let rawX = acc.x || 0;
+      let rawY = acc.y || 0;
+      let rawZ = acc.z || 0;
+
+      // Normalizzazione orientamento portrait
+      let orientation = window.orientation || 0;
+      switch(orientation) {
+        case 0:
+          accelData.x = rawX;
+          accelData.y = rawY;
+          break;
+        case 180:
+          accelData.x = -rawX;
+          accelData.y = -rawY;
+          break;
+        case 90:
+          accelData.x = -rawY;
+          accelData.y = rawX;
+          break;
+        case -90:
+          accelData.x = rawY;
+          accelData.y = -rawX;
+          break;
+        default:
+          accelData.x = rawX;
+          accelData.y = rawY;
+      }
+
+      accelData.z = rawZ; // verticale
     }
 
-    // --- Gestione barra spaziatrice ---
     function handleKey(event) {
       if (event.code === "Space") {
         if (!simulateGravity && !restoring) {
@@ -104,15 +119,12 @@
       }
     }
 
-    // --- Caricamento dati esterni ---
     async function loadData() {
       try {
         const response = await fetch("data.json");
         const data = await response.json();
-
         document.title = data.pageTitle;
 
-        // salva copia originale e copia modificabile
         originalSquares = JSON.parse(JSON.stringify(data.squares));
         squares = JSON.parse(JSON.stringify(data.squares));
 
@@ -121,8 +133,6 @@
 
         draw();
         updateSquares();
-
-        console.log("Premi la barra spaziatrice per simulare gravità o ricomporre l'opera.");
       } catch (err) {
         console.error("Errore caricamento dati:", err);
       }
@@ -130,12 +140,10 @@
 
     window.onload = loadData;
 
-    // --- Adatta il canvas alla finestra ---
     window.addEventListener("resize", () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     });
   </script>
 </body>
-
 </html>
