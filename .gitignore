@@ -1,0 +1,28 @@
+# --- Python virtual environments ---
+embeddings_env/
+venv/
+.env/
+*.pyc
+__pycache__/
+
+# --- TensorFlow / heavy libs ---
+*.dll
+*.so
+*.dylib
+
+# --- Node / JS ---
+node_modules/
+
+# --- TFJS models (if downloaded locally) ---
+models/**/*.bin
+models/**/*.pb
+
+# --- System files ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+
+# --- VS Code ---
+.vscode/
