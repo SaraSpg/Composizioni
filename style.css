@@ -11,6 +11,7 @@
 body {
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
+
     background: linear-gradient(135deg, var(--pink), var(--blue));
     color: var(--black);
 
@@ -18,10 +19,12 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+
+    overflow: hidden;
 }
 
 /* =========================
-   MAIN
+   MAIN UI
    ========================= */
 main {
     width: 100%;
@@ -41,12 +44,12 @@ main {
     background: rgba(255,255,255,0.6);
     border-radius: 12px;
 
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
 /* =========================
-   WRAPPER CENTRATO
+   VIDEO AREA
    ========================= */
 .video-wrapper {
     display: flex;
@@ -54,9 +57,6 @@ main {
     align-items: center;
 }
 
-/* =========================
-   VIDEO FRAME
-   ========================= */
 .video-container {
     position: relative;
 
@@ -73,9 +73,7 @@ video {
     display: block;
 }
 
-/* =========================
-   OVERLAY
-   ========================= */
+/* overlay */
 #overlay {
     position: absolute;
     bottom: 15px;
@@ -91,7 +89,7 @@ video {
 }
 
 /* =========================
-   CONTROLLI (START / STOP)
+   CONTROLS
    ========================= */
 .controls {
     width: 500px;
@@ -103,13 +101,11 @@ video {
     margin-top: 15px;
 }
 
-/* bottoni */
 button {
     flex: 1;
-
     margin: 0 10px;
-    padding: 14px;
 
+    padding: 14px;
     font-size: 16px;
 
     border: none;
@@ -136,8 +132,81 @@ button:disabled {
 }
 
 /* =========================
+   EXPERIENCE LAYER (FIXED VERSION)
+   ========================= */
+#experience {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: radial-gradient(circle at center, rgba(10,10,10,0.95), rgba(0,0,0,1));
+
+    overflow: hidden;
+}
+
+/* 🔥 KEY FIX: controlled size container */
+.experience-inner {
+    position: relative;
+
+    width: min(80vw, 600px);
+    aspect-ratio: 4 / 3; /* evita “immagini enormi” */
+
+    display: block;
+}
+
+/* =========================
+   IMAGES (perfect alignment)
+   ========================= */
+#topImage,
+#bottomImage {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+
+    border-radius: 12px;
+}
+
+/* bottom image fade */
+#bottomImage {
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+}
+
+#bottomImage.show {
+    opacity: 1;
+}
+
+/* top image */
+#topImage {
+    z-index: 2;
+}
+
+/* =========================
+   CANVAS (CRITICAL FIX)
+   ========================= */
+#breakCanvas {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* =========================
    UTILS
    ========================= */
 .hidden {
-    display: none;
+    display: none !important;
 }

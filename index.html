@@ -5,6 +5,273 @@
     <title>Riconoscimento quadri</title>
 
     <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<main>
+    <div id="status">✨ Sto preparando l’esperienza artistica…</div>
+
+    <div class="video-wrapper">
+
+        <div class="video-container hidden" id="videoBox">
+            <video id="video" autoplay playsinline></video>
+            <div id="overlay">In attesa del riconoscimento…</div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" disabled>Avvia</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+
+    </div>
+</main>
+
+<!-- 🎬 EXPERIENCE LAYER -->
+<div id="experience" class="hidden">
+    <img id="topImage">
+    <img id="bottomImage">
+    <canvas id="breakCanvas"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+
+<script type="module">
+import { initRecognizer, recognizeFrame } from "./recognizer.js";
+import { breakImage } from "./physics.js";
+
+const video = document.getElementById("video");
+const overlay = document.getElementById("overlay");
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const status = document.getElementById("status");
+const videoBox = document.getElementById("videoBox");
+
+const exp = document.getElementById("experience");
+const topImg = document.getElementById("topImage");
+const bottomImg = document.getElementById("bottomImage");
+const canvas = document.getElementById("breakCanvas");
+
+let running = false;
+
+// ===== stable detection =====
+let stableName = null;
+let stableStart = 0;
+const STABLE_TIME = 1000;
+
+// ===== experience lock =====
+let inExperience = false;
+
+// ==========================
+// 🔧 IMAGE LOADER (FIX CRASH)
+// ==========================
+function loadImage(img, src) {
+    return new Promise((resolve, reject) => {
+        img.onload = () => resolve(img);
+
+        img.onerror = () => {
+            console.error("❌ Immagine mancante:", src);
+
+            // fallback: evita crash canvas
+            img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+
+            resolve(img);
+        };
+
+        img.src = src;
+    });
+}
+
+// ==========================
+// CAMERA
+// ==========================
+async function startCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    await video.play();
+}
+
+// ==========================
+// INIT
+// ==========================
+async function loadEverything() {
+    status.textContent = "🎨 Caricamento modello…";
+
+    await initRecognizer();
+
+    status.textContent = "📷 Avvio webcam…";
+
+    await startCamera();
+
+    status.textContent = "✨ Pronto!";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = false;
+
+    videoBox.classList.remove("hidden");
+
+    exp.classList.add("hidden"); // 🔥 IMPORTANTISSIMO
+}
+
+// ==========================
+// LOOP
+// ==========================
+async function loop() {
+    if (!running || inExperience) return;
+
+    const result = await recognizeFrame(video);
+
+    if (result?.skip) {
+        requestAnimationFrame(loop);
+        return;
+    }
+
+    if (result && result.bestName) {
+
+        if (stableName === result.bestName) {
+
+            if (Date.now() - stableStart > STABLE_TIME) {
+                triggerExperience(result.bestName);
+                return;
+            }
+
+        } else {
+            stableName = result.bestName;
+            stableStart = Date.now();
+        }
+
+        overlay.textContent =
+            `🎨 ${result.bestName.replace(/\.[^/.]+$/, "")} (${result.bestScore.toFixed(2)})`;
+
+    } else {
+        stableName = null;
+        stableStart = 0;
+        overlay.textContent = "Nessun quadro riconosciuto";
+    }
+
+    requestAnimationFrame(loop);
+}
+
+// ==========================
+// EXPERIENCE
+// ==========================
+async function triggerExperience(name) {
+    try {
+
+        inExperience = true;
+        running = false;
+
+        exp.classList.remove("hidden");
+
+        const cleanName = name.replace(/\.[^/.]+$/, ".jpg");
+
+        await Promise.all([
+            loadImage(topImg, `assets/paintings/${cleanName}`),
+            loadImage(bottomImg, `assets/poetry/poetry_${cleanName}`)
+        ]);
+
+        bottomImg.classList.remove("show");
+        topImg.style.display = "block";
+
+        await wait(1200);
+
+        startBreakAnimation();
+
+        bottomImg.classList.add("show");
+
+        await wait(3000);
+
+        resetExperience();
+
+    } catch (err) {
+        console.error("❌ Crash experience:", err);
+        resetExperience();
+    }
+}
+
+// ==========================
+// BREAK EFFECT
+// ==========================
+function startBreakAnimation() {
+    const rect = topImg.getBoundingClientRect();
+
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    canvas.style.width = rect.width + "px";
+    canvas.style.height = rect.height + "px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    breakImage(topImg, canvas);
+
+    topImg.style.display = "none";
+}
+
+// ==========================
+// RESET
+// ==========================
+function resetExperience() {
+    exp.classList.add("hidden");
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    bottomImg.classList.remove("show");
+    topImg.style.display = "block";
+
+    stableName = null;
+    stableStart = 0;
+
+    inExperience = false;
+    running = true;
+
+    loop();
+}
+
+// ==========================
+// HELPERS
+// ==========================
+function wait(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+// ==========================
+// START / STOP
+// ==========================
+function startRecognition() {
+    running = true;
+    status.textContent = "🔍 Riconoscimento attivo…";
+    loop();
+}
+
+function stopRecognition() {
+    running = false;
+    status.textContent = "⛔ Riconoscimento fermato";
+}
+
+// ==========================
+// BOOT
+// ==========================
+loadEverything();
+
+startBtn.addEventListener("click", startRecognition);
+stopBtn.addEventListener("click", stopRecognition);
+</script>
+</body>
+</html>
+
+<!--
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Riconoscimento quadri</title>
+
+    <link rel="stylesheet" href="style.css">
 
     <style>
         /* fallback minimo se CSS non carica */
@@ -199,3 +466,5 @@ stopBtn.addEventListener("click", stopRecognition);
 
 </body>
 </html>
+
+ -->

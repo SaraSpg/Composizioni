@@ -11,7 +11,7 @@ model = tf.keras.applications.MobileNetV2(
     pooling="avg"
 )
 
-assets_dir = "assets"
+assets_dir = "assets/paintings"
 embeddings = {}
 
 for filename in os.listdir(assets_dir):
