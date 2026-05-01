@@ -132,7 +132,7 @@ button:disabled {
 }
 
 /* =========================
-   EXPERIENCE LAYER (FIXED VERSION)
+   EXPERIENCE LAYER (FIX DEFINITIVO)
    ========================= */
 #experience {
     position: fixed;
@@ -148,33 +148,38 @@ button:disabled {
     overflow: hidden;
 }
 
-/* 🔥 KEY FIX: controlled size container */
+/* ===== SCENA CENTRATA ===== */
 .experience-inner {
     position: relative;
 
-    width: min(80vw, 600px);
-    aspect-ratio: 4 / 3; /* evita “immagini enormi” */
+    /* 🔥 QUESTO è il vero fix: dimensione “contenitore quadro” */
+    width: min(70vw, 700px);
+    height: min(70vh, 700px);
 
-    display: block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* =========================
-   IMAGES (perfect alignment)
+   IMMAGINI (NO STRETCH, NO FULL WIDTH)
    ========================= */
 #topImage,
 #bottomImage {
     position: absolute;
-    inset: 0;
 
-    width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+
+    width: auto;
+    height: auto;
 
     object-fit: contain;
 
     border-radius: 12px;
 }
 
-/* bottom image fade */
+/* bottom image */
 #bottomImage {
     z-index: 1;
     opacity: 0;
@@ -191,7 +196,7 @@ button:disabled {
 }
 
 /* =========================
-   CANVAS (CRITICAL FIX)
+   CANVAS (DEVE COPIARE LA SCENA, NON IL BODY)
    ========================= */
 #breakCanvas {
     position: absolute;
@@ -204,9 +209,7 @@ button:disabled {
     z-index: 3;
 }
 
-/* =========================
-   UTILS
-   ========================= */
+/* UTILS */
 .hidden {
     display: none !important;
 }

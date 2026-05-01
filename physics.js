@@ -1,102 +1,122 @@
 export function breakImage(img, canvas) {
-    const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
 
-    const dpr = window.devicePixelRatio || 1;
+  const rect = img.getBoundingClientRect();
 
-    // ==========================
-    // REAL IMAGE SIZE (IMPORTANT)
-    // ==========================
-    const rect = img.getBoundingClientRect();
+  canvas.style.position = "fixed"; 
+  canvas.style.left = rect.left + "px";
+  canvas.style.top = rect.top + "px";
 
-    const displayW = rect.width;
-    const displayH = rect.height;
 
-    // canvas match display size
-    canvas.width = displayW * dpr;
-    canvas.height = displayH * dpr;
+  const dpr = window.devicePixelRatio || 1;
 
-    canvas.style.width = displayW + "px";
-    canvas.style.height = displayH + "px";
+  // ==========================
+  // CANVAS SIZE = DISPLAY SIZE
+  // ==========================
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  canvas.style.width = rect.width + "px";
+  canvas.style.height = rect.height + "px";
 
-    // ==========================
-    // FIX: draw EXACT same size as displayed image
-    // ==========================
-    const temp = document.createElement("canvas");
-    const tctx = temp.getContext("2d");
+  // reset + scale to match CSS pixels
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    temp.width = displayW;
-    temp.height = displayH;
+  const width = rect.width;
+  const height = rect.height;
 
-    tctx.drawImage(img, 0, 0, displayW, displayH);
+  // ==========================
+  // DRAW IMAGE INTO TEMP CANVAS
+  // ==========================
+  const temp = document.createElement("canvas");
+  const tctx = temp.getContext("2d");
 
-    const PIECE = 16;
+  temp.width = width;
+  temp.height = height;
 
-    const pieces = [];
+  tctx.drawImage(img, 0, 0, width, height);
 
-    // ==========================
-    // CREATE PIECES (LOCKED TO DISPLAY SPACE)
-    // ==========================
-    for (let y = 0; y < displayH; y += PIECE) {
-        for (let x = 0; x < displayW; x += PIECE) {
+  // ==========================
+  // CONFIG (più controllato)
+  // ==========================
+  const PIECE_SIZE = 18;
 
-            const w = Math.min(PIECE, displayW - x);
-            const h = Math.min(PIECE, displayH - y);
+  const GRAVITY = 0.03;
+  const FRICTION = 0.99;
 
-            pieces.push({
-                x,
-                y,
-                w,
-                h,
+  const pieces = [];
 
-                vx: (Math.random() - 0.5) * 1.2,
-                vy: Math.random() * -2.5,
+  // ==========================
+  // CREATE PIECES (CENTER SAFE)
+  // ==========================
+  for (let y = 0; y < height; y += PIECE_SIZE) {
+    for (let x = 0; x < width; x += PIECE_SIZE) {
 
-                rotation: Math.random() * 0.3,
-                vr: (Math.random() - 0.5) * 0.03
-            });
-        }
+      const w = Math.min(PIECE_SIZE, width - x);
+      const h = Math.min(PIECE_SIZE, height - y);
+
+      pieces.push({
+        x,
+        y,
+        w,
+        h,
+
+        // start EXACTLY on image position
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: Math.random() * -2,
+
+        rotation: Math.random() * 0.2,
+        vr: (Math.random() - 0.5) * 0.03
+      });
+    }
+  }
+
+  // clear canvas
+  ctx.clearRect(0, 0, width, height);
+
+  // ==========================
+  // ANIMATION
+  // ==========================
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    let active = false;
+
+    for (const p of pieces) {
+
+      p.vy += GRAVITY;
+      p.vx *= FRICTION;
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      p.rotation += p.vr;
+
+      if (p.y < height + 200) active = true;
+
+      ctx.save();
+
+      ctx.translate(
+        p.x + p.w / 2,
+        p.y + p.h / 2
+      );
+
+      ctx.rotate(p.rotation);
+
+      // draw correct slice from temp canvas
+      ctx.drawImage(
+        temp,
+        p.x, p.y, p.w, p.h,
+        -p.w / 2, -p.h / 2, p.w, p.h
+      );
+
+      ctx.restore();
     }
 
-    ctx.clearRect(0, 0, displayW, displayH);
-
-    function animate() {
-        ctx.clearRect(0, 0, displayW, displayH);
-
-        let alive = false;
-
-        for (const p of pieces) {
-
-            p.vy += 0.22;
-            p.vx *= 0.985;
-
-            p.x += p.vx;
-            p.y += p.vy;
-            p.rotation += p.vr;
-
-            if (p.y < displayH + 100) alive = true;
-
-            ctx.save();
-
-            ctx.translate(
-                p.x + p.w / 2,
-                p.y + p.h / 2
-            );
-
-            ctx.rotate(p.rotation);
-
-            ctx.drawImage(
-                temp,
-                p.x, p.y, p.w, p.h,
-                -p.w / 2, -p.h / 2, p.w, p.h
-            );
-
-            ctx.restore();
-        }
-
-        if (alive) requestAnimationFrame(animate);
+    if (active) {
+      requestAnimationFrame(animate);
     }
+  }
 
-    animate();
+  animate();
 }
