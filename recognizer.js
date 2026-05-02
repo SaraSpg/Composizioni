@@ -72,7 +72,7 @@ function cosineSimilarityTensor(ta, tb) {
 // ==========================
 // MATCHING
 // ==========================
-function findBestMatch(embedding, threshold = 0.55) {
+function findBestMatch(embedding, threshold = 0.6) {
     const inputTensor = tf.tensor1d(embedding);
 
     let bestName = null;
