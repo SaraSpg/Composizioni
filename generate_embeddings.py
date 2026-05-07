@@ -3,7 +3,7 @@ import json
 import numpy as np
 import tensorflow as tf
 
-# 🔹 Modello corretto (1280-dim)
+# Modello corretto (1280-dim)
 model = tf.keras.applications.MobileNetV2(
     input_shape=(224, 224, 3),
     include_top=False,
@@ -11,33 +11,49 @@ model = tf.keras.applications.MobileNetV2(
     pooling="avg"
 )
 
-assets_dir = "assets/paintings"
+# Cartelle da processare
+folders = [
+    "assets/paintings",
+    "assets/blue_paintings"
+]
+
 embeddings = {}
 
-for filename in os.listdir(assets_dir):
-    if filename.lower().endswith((".jpg", ".jpeg", ".png")):
-        path = os.path.join(assets_dir, filename)
+# File da escludere
+EXCLUDED = {"blu_11.jpg"}
 
-        try:
-            # Carica immagine
-            img = tf.keras.utils.load_img(path, target_size=(224, 224))
-            x = tf.keras.utils.img_to_array(img)
+def process_folder(folder):
+    for filename in os.listdir(folder):
 
-            # Preprocessing MobileNetV2 (IMPORTANTISSIMO)
-            x = tf.keras.applications.mobilenet_v2.preprocess_input(x)
-            x = np.expand_dims(x, axis=0)
+        # Esclusione specifica
+        if filename in EXCLUDED:
+            continue
 
-            # Embedding (1280)
-            emb = model.predict(x, verbose=0)[0]
+        if filename.lower().endswith((".jpg", ".jpeg", ".png")):
+            path = os.path.join(folder, filename)
 
-            embeddings[filename] = emb.tolist()
+            try:
+                img = tf.keras.utils.load_img(path, target_size=(224, 224))
+                x = tf.keras.utils.img_to_array(img)
 
-            print(f"{filename} -> {len(emb)}")
+                x = tf.keras.applications.mobilenet_v2.preprocess_input(x)
+                x = np.expand_dims(x, axis=0)
 
-        except Exception as e:
-            print(f"Errore con {filename}: {e}")
+                emb = model.predict(x, verbose=0)[0]
 
-# 🔹 Salvataggio
+                embeddings[filename] = emb.tolist()
+
+                print(f"{filename} -> {len(emb)}")
+
+            except Exception as e:
+                print(f"Errore con {filename}: {e}")
+
+
+# Processa entrambe le cartelle
+for folder in folders:
+    process_folder(folder)
+
+# Salvataggio
 with open("embeddings.json", "w") as f:
     json.dump(embeddings, f)
 

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <title>Riconoscimento quadri</title>
@@ -9,257 +10,303 @@
 
 <body>
 
-<main>
-    <div id="status">✨ Sto preparando l’esperienza artistica…</div>
+    <main>
+        <div id="status">✨ Loading…</div>
 
-    <div class="video-wrapper">
+        <div class="video-wrapper">
 
-        <div class="video-container hidden" id="videoBox">
-            <video id="video" autoplay playsinline></video>
-            <div id="overlay">In attesa del riconoscimento…</div>
+            <div class="video-container hidden" id="videoBox">
+                <video id="video" autoplay playsinline></video>
+                <div id="overlay">In attesa del riconoscimento…</div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn" disabled>Start</button>
+                <button id="stopBtn" disabled>Stop</button>
+            </div>
+
         </div>
+    </main>
 
-        <div class="controls">
-            <button id="startBtn" disabled>Avvia</button>
-            <button id="stopBtn" disabled>Stop</button>
+    <div id="experience" class="hidden">
+        <img id="topImage">
+        <img id="bottomImage">
+        <canvas id="breakCanvas"></canvas>
+    </div>
+
+    <div id="bluSelector" class="hidden">
+
+        <div id="bluContent">
+            <h2 id="bluTitle">Choose a painting</h2>
+            <div id="bluGrid"></div>
         </div>
 
     </div>
-</main>
 
-<!-- 🎬 EXPERIENCE LAYER -->
-<div id="experience" class="hidden">
-    <img id="topImage">
-    <img id="bottomImage">
-    <canvas id="breakCanvas"></canvas>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 
-<script type="module">
-import { initRecognizer, recognizeFrame } from "./recognizer.js";
-import { breakImage } from "./physics.js";
+    <script type="module">
+        import { initRecognizer, recognizeFrame } from "./recognizer.js";
+        import { breakImage } from "./physics.js";
 
-const video = document.getElementById("video");
-const overlay = document.getElementById("overlay");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
-const status = document.getElementById("status");
-const videoBox = document.getElementById("videoBox");
+        const video = document.getElementById("video");
+        const overlay = document.getElementById("overlay");
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const status = document.getElementById("status");
+        const videoBox = document.getElementById("videoBox");
 
-const exp = document.getElementById("experience");
-const topImg = document.getElementById("topImage");
-const bottomImg = document.getElementById("bottomImage");
-const canvas = document.getElementById("breakCanvas");
+        const exp = document.getElementById("experience");
+        const topImg = document.getElementById("topImage");
+        const bottomImg = document.getElementById("bottomImage");
+        const canvas = document.getElementById("breakCanvas");
 
-let running = false;
+        let running = false;
 
-// ===== stable detection =====
-let stableName = null;
-let stableStart = 0;
-const STABLE_TIME = 1000;
+        // ===== stable detection =====
+        let stableName = null;
+        let stableStart = 0;
+        const STABLE_TIME = 1000;
 
-// ===== experience lock =====
-let inExperience = false;
+        // ===== experience lock =====
+        let inExperience = false;
 
-// ==========================
-// 🔧 IMAGE LOADER (FIX CRASH)
-// ==========================
-function loadImage(img, src) {
-    return new Promise((resolve, reject) => {
-        img.onload = () => resolve(img);
+        // ==========================
+        // IMAGE LOADER
+        // ==========================
+        function loadImage(img, src) {
+            return new Promise((resolve, reject) => {
+                img.onload = () => resolve(img);
 
-        img.onerror = () => {
-            console.error("❌ Immagine mancante:", src);
+                img.onerror = () => {
+                    console.error("❌ Immagine mancante:", src);
 
-            // fallback: evita crash canvas
-            img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+                    // fallback: evita crash canvas
+                    img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
 
-            resolve(img);
-        };
+                    resolve(img);
+                };
 
-        img.src = src;
-    });
-}
+                img.src = src;
+            });
+        }
 
-// ==========================
-// CAMERA
-// ==========================
-async function startCamera() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    await video.play();
-}
+        // ==========================
+        // CAMERA
+        // ==========================
+        async function startCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            await video.play();
+        }
 
-// ==========================
-// INIT
-// ==========================
-async function loadEverything() {
-    status.textContent = "🎨 Caricamento modello…";
+        // ==========================
+        // INIT
+        // ==========================
+        async function loadEverything() {
+            status.textContent = "🎨 Loading model…";
 
-    await initRecognizer();
+            await initRecognizer();
 
-    status.textContent = "📷 Avvio webcam…";
+            status.textContent = "📷 Starting webcam…";
 
-    await startCamera();
+            await startCamera();
 
-    status.textContent = "✨ Pronto!";
+            status.textContent = "✨ Ready! Click Start!";
 
-    startBtn.disabled = false;
-    stopBtn.disabled = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = false;
 
-    videoBox.classList.remove("hidden");
+            videoBox.classList.remove("hidden");
 
-    exp.classList.add("hidden"); // 🔥 IMPORTANTISSIMO
-}
+            exp.classList.add("hidden");
+        }
 
-// ==========================
-// LOOP
-// ==========================
-async function loop() {
-    if (!running || inExperience) return;
+        // ==========================
+        // LOOP
+        // ==========================
+        async function loop() {
+            if (!running || inExperience) return;
 
-    const result = await recognizeFrame(video);
+            const result = await recognizeFrame(video);
 
-    if (result?.skip) {
-        requestAnimationFrame(loop);
-        return;
-    }
-
-    if (result && result.bestName) {
-
-        if (stableName === result.bestName) {
-
-            if (Date.now() - stableStart > STABLE_TIME) {
-                triggerExperience(result.bestName);
+            if (result?.skip) {
+                requestAnimationFrame(loop);
                 return;
             }
 
-        } else {
-            stableName = result.bestName;
-            stableStart = Date.now();
+            if (result && result.bestName) {
+
+                if (stableName === result.bestName) {
+
+                    if (Date.now() - stableStart > STABLE_TIME) {
+                        if (result.bestName.startsWith("blu_") ||
+                            result.bestName === "blu_full.jpg") {
+                            triggerBluSelection();
+                            return;
+                        }
+
+                        triggerExperience(result.bestName);
+                        return;
+                    }
+
+                } else {
+                    stableName = result.bestName;
+                    stableStart = Date.now();
+                }
+
+                overlay.textContent =
+                    `🎨 ${result.bestName.replace(/\.[^/.]+$/, "")} (${result.bestScore.toFixed(2)})`;
+
+            } else {
+                stableName = null;
+                stableStart = 0;
+                overlay.textContent = "Nessun quadro riconosciuto";
+            }
+
+            requestAnimationFrame(loop);
         }
 
-        overlay.textContent =
-            `🎨 ${result.bestName.replace(/\.[^/.]+$/, "")} (${result.bestScore.toFixed(2)})`;
+        const bluSelector = document.getElementById("bluSelector");
+        const bluGrid = document.getElementById("bluGrid");
 
-    } else {
-        stableName = null;
-        stableStart = 0;
-        overlay.textContent = "Nessun quadro riconosciuto";
-    }
+        function triggerBluSelection() {
+            running = false;
+            inExperience = true;
 
-    requestAnimationFrame(loop);
-}
+            bluGrid.innerHTML = "";
 
-// ==========================
-// EXPERIENCE
-// ==========================
-async function triggerExperience(name) {
-    try {
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
 
-        inExperience = true;
-        running = false;
+                    const img = document.createElement("img");
+                    const name = `blu_${i}${j}.jpg`;
 
-        exp.classList.remove("hidden");
+                    img.src = `assets/blue_paintings/${name}`;
 
-        const cleanName = name.replace(/\.[^/.]+$/, ".jpg");
+                    img.onclick = () => {
+                        bluSelector.classList.add("hidden");
+                        triggerExperience(name);
+                    };
 
-        await Promise.all([
-            loadImage(topImg, `assets/paintings/${cleanName}`),
-            loadImage(bottomImg, `assets/poetry/poetry_${cleanName}`)
-        ]);
+                    bluGrid.appendChild(img);
+                }
+            }
 
-        bottomImg.classList.remove("show");
-        topImg.style.display = "block";
+            bluSelector.classList.remove("hidden");
+        }
 
-        await wait(1200);
 
-        startBreakAnimation();
+        // ==========================
+        // EXPERIENCE
+        // ==========================
+        async function triggerExperience(name) {
+            try {
 
-        bottomImg.classList.add("show");
+                inExperience = true;
+                running = false;
 
-        await wait(5000);
+                exp.classList.remove("hidden");
 
-        resetExperience();
+                const cleanName = name.replace(/\.[^/.]+$/, ".jpg");
 
-    } catch (err) {
-        console.error("❌ Crash experience:", err);
-        resetExperience();
-    }
-}
+                await Promise.all([
+                    loadImage(topImg, `assets/paintings/${cleanName}`),
+                    loadImage(bottomImg, `assets/poetry/poetry_${cleanName}`)
+                ]);
 
-// ==========================
-// BREAK EFFECT
-// ==========================
-function startBreakAnimation() {
-    const rect = topImg.getBoundingClientRect();
+                bottomImg.classList.remove("show");
+                topImg.style.display = "block";
 
-    const dpr = window.devicePixelRatio || 1;
+                await wait(1200);
 
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+                startBreakAnimation();
 
-    canvas.style.width = rect.width + "px";
-    canvas.style.height = rect.height + "px";
+                bottomImg.classList.add("show");
 
-    const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
+                await wait(5000);
 
-    breakImage(topImg, canvas);
+                resetExperience();
 
-    topImg.style.display = "none";
-}
+            } catch (err) {
+                console.error("❌ Crash experience:", err);
+                resetExperience();
+            }
+        }
 
-// ==========================
-// RESET
-// ==========================
-function resetExperience() {
-    exp.classList.add("hidden");
+        // ==========================
+        // BREAK EFFECT
+        // ==========================
+        function startBreakAnimation() {
+            const rect = topImg.getBoundingClientRect();
 
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const dpr = window.devicePixelRatio || 1;
 
-    bottomImg.classList.remove("show");
-    topImg.style.display = "block";
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
 
-    stableName = null;
-    stableStart = 0;
+            canvas.style.width = rect.width + "px";
+            canvas.style.height = rect.height + "px";
 
-    inExperience = false;
-    running = true;
+            const ctx = canvas.getContext("2d");
+            ctx.scale(dpr, dpr);
 
-    loop();
-}
+            breakImage(topImg, canvas);
 
-// ==========================
-// HELPERS
-// ==========================
-function wait(ms) {
-    return new Promise(r => setTimeout(r, ms));
-}
+            topImg.style.display = "none";
+        }
 
-// ==========================
-// START / STOP
-// ==========================
-function startRecognition() {
-    running = true;
-    status.textContent = "🔍 Riconoscimento attivo…";
-    loop();
-}
+        // ==========================
+        // RESET
+        // ==========================
+        function resetExperience() {
+            exp.classList.add("hidden");
 
-function stopRecognition() {
-    running = false;
-    status.textContent = "⛔ Riconoscimento fermato";
-}
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-// ==========================
-// BOOT
-// ==========================
-loadEverything();
+            bottomImg.classList.remove("show");
+            topImg.style.display = "block";
 
-startBtn.addEventListener("click", startRecognition);
-stopBtn.addEventListener("click", stopRecognition);
-</script>
+            stableName = null;
+            stableStart = 0;
+
+            inExperience = false;
+            running = true;
+
+            loop();
+        }
+
+        // ==========================
+        // HELPERS
+        // ==========================
+        function wait(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        // ==========================
+        // START / STOP
+        // ==========================
+        function startRecognition() {
+            running = true;
+            status.textContent = "🔍 Riconoscimento attivo…";
+            loop();
+        }
+
+        function stopRecognition() {
+            running = false;
+            status.textContent = "⛔ Riconoscimento fermato";
+        }
+
+        // ==========================
+        // BOOT
+        // ==========================
+        loadEverything();
+
+        startBtn.addEventListener("click", startRecognition);
+        stopBtn.addEventListener("click", stopRecognition);
+    </script>
 </body>
+
 </html>
