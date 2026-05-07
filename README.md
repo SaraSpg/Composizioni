@@ -99,4 +99,11 @@ embeddings_env\Scripts\activate      # Windows
 pip install -r requirements.txt
 
 python generate_embeddings.py
+```
+
+## 📜 License
+
+This project is intended for artistic and educational use.
+All artworks and poems are © Aalma Lumière.
+
 
