@@ -39,9 +39,9 @@ export function breakImage(img, canvas) {
   // ==========================
   // CONFIG (più controllato)
   // ==========================
-  const PIECE_SIZE = 18;
+  const PIECE_SIZE = 13;
 
-  const GRAVITY = 0.03;
+  const GRAVITY = 10;
   const FRICTION = 0.99;
 
   const pieces = [];
@@ -63,7 +63,7 @@ export function breakImage(img, canvas) {
 
         // start EXACTLY on image position
         vx: (Math.random() - 0.5) * 1.5,
-        vy: Math.random() * -2,
+        vy: Math.random() * -1,
 
         rotation: Math.random() * 0.2,
         vr: (Math.random() - 0.5) * 0.03

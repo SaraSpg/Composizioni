@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Riconoscimento quadri</title>
+    <title>Aalma Lumiere</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -17,7 +17,7 @@
 
             <div class="video-container hidden" id="videoBox">
                 <video id="video" autoplay playsinline></video>
-                <div id="overlay">In attesa del riconoscimento…</div>
+                <div id="overlay">Waiting to start...</div>
             </div>
 
             <div class="controls">
@@ -28,21 +28,20 @@
         </div>
     </main>
 
+    <!-- EXPERIENCE -->
     <div id="experience" class="hidden">
         <img id="topImage">
         <img id="bottomImage">
         <canvas id="breakCanvas"></canvas>
     </div>
 
+    <!-- BLU SELECTOR -->
     <div id="bluSelector" class="hidden">
-
         <div id="bluContent">
             <h2 id="bluTitle">Choose a painting</h2>
             <div id="bluGrid"></div>
         </div>
-
     </div>
-
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 
@@ -63,69 +62,45 @@
         const canvas = document.getElementById("breakCanvas");
 
         let running = false;
-
-        // ===== stable detection =====
         let stableName = null;
         let stableStart = 0;
         const STABLE_TIME = 1000;
-
-        // ===== experience lock =====
         let inExperience = false;
 
-        // ==========================
-        // IMAGE LOADER
-        // ==========================
         function loadImage(img, src) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 img.onload = () => resolve(img);
-
                 img.onerror = () => {
                     console.error("❌ Immagine mancante:", src);
-
-                    // fallback: evita crash canvas
                     img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
-
                     resolve(img);
                 };
-
-                img.src = src;
+                //img.src = src;
+                img.src = src + "?v=" + Date.now();  // cache-buster
             });
         }
 
-        // ==========================
-        // CAMERA
-        // ==========================
         async function startCamera() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             video.srcObject = stream;
             await video.play();
         }
 
-        // ==========================
-        // INIT
-        // ==========================
         async function loadEverything() {
             status.textContent = "🎨 Loading model…";
-
             await initRecognizer();
 
             status.textContent = "📷 Starting webcam…";
-
             await startCamera();
 
             status.textContent = "✨ Ready! Click Start!";
-
             startBtn.disabled = false;
             stopBtn.disabled = false;
 
             videoBox.classList.remove("hidden");
-
             exp.classList.add("hidden");
         }
 
-        // ==========================
-        // LOOP
-        // ==========================
         async function loop() {
             if (!running || inExperience) return;
 
@@ -141,12 +116,15 @@
                 if (stableName === result.bestName) {
 
                     if (Date.now() - stableStart > STABLE_TIME) {
+
+                        // Tutti i blu → selettore 3x3
                         if (result.bestName.startsWith("blu_") ||
                             result.bestName === "blu_full.jpg") {
                             triggerBluSelection();
                             return;
                         }
 
+                        // Altri quadri → esperienza normale
                         triggerExperience(result.bestName);
                         return;
                     }
@@ -162,7 +140,7 @@
             } else {
                 stableName = null;
                 stableStart = 0;
-                overlay.textContent = "Nessun quadro riconosciuto";
+                overlay.textContent = "Still no detection...";
             }
 
             requestAnimationFrame(loop);
@@ -187,6 +165,12 @@
 
                     img.onclick = () => {
                         bluSelector.classList.add("hidden");
+
+                        if (name === "blu_11.jpg") {
+                            showBlu11WithoutPhysics();
+                            return;
+                        }
+
                         triggerExperience(name);
                     };
 
@@ -197,13 +181,8 @@
             bluSelector.classList.remove("hidden");
         }
 
-
-        // ==========================
-        // EXPERIENCE
-        // ==========================
         async function triggerExperience(name) {
             try {
-
                 inExperience = true;
                 running = false;
 
@@ -211,8 +190,12 @@
 
                 const cleanName = name.replace(/\.[^/.]+$/, ".jpg");
 
+                let topPath = cleanName.startsWith("blu_")
+                    ? `assets/blue_paintings/${cleanName}`
+                    : `assets/paintings/${cleanName}`;
+
                 await Promise.all([
-                    loadImage(topImg, `assets/paintings/${cleanName}`),
+                    loadImage(topImg, topPath),
                     loadImage(bottomImg, `assets/poetry/poetry_${cleanName}`)
                 ]);
 
@@ -225,7 +208,7 @@
 
                 bottomImg.classList.add("show");
 
-                await wait(5000);
+                await wait(7000);
 
                 resetExperience();
 
@@ -235,12 +218,26 @@
             }
         }
 
-        // ==========================
-        // BREAK EFFECT
-        // ==========================
+        function showBlu11WithoutPhysics() {
+            inExperience = true;
+            running = false;
+
+            exp.classList.remove("hidden");
+
+            Promise.all([
+                loadImage(topImg, "assets/blue_paintings/blu_11.jpg"),
+                loadImage(bottomImg, "assets/poetry/poetry_blu_11.jpg")
+            ]).then(() => {
+
+                topImg.style.display = "none";
+                bottomImg.classList.add("show");
+
+                wait(5000).then(() => resetExperience());
+            });
+        }
+
         function startBreakAnimation() {
             const rect = topImg.getBoundingClientRect();
-
             const dpr = window.devicePixelRatio || 1;
 
             canvas.width = rect.width * dpr;
@@ -257,9 +254,6 @@
             topImg.style.display = "none";
         }
 
-        // ==========================
-        // RESET
-        // ==========================
         function resetExperience() {
             exp.classList.add("hidden");
 
@@ -278,30 +272,21 @@
             loop();
         }
 
-        // ==========================
-        // HELPERS
-        // ==========================
         function wait(ms) {
             return new Promise(r => setTimeout(r, ms));
         }
 
-        // ==========================
-        // START / STOP
-        // ==========================
         function startRecognition() {
             running = true;
-            status.textContent = "🔍 Riconoscimento attivo…";
+            status.textContent = "🔍 Painting detection...";
             loop();
         }
 
         function stopRecognition() {
             running = false;
-            status.textContent = "⛔ Riconoscimento fermato";
+            status.textContent = "⛔ Stopped. Click Start to resume.";
         }
 
-        // ==========================
-        // BOOT
-        // ==========================
         loadEverything();
 
         startBtn.addEventListener("click", startRecognition);

@@ -1,42 +1,102 @@
-# 🎨 Composizioni — Image Embeddings Project
+# 🎨 Aalma Lumière — Interactive Painting Recognition
 
-This project explores the generation and comparison of **image embeddings** using a hybrid workflow:  
-Python is used offline to compute embeddings with TensorFlow, while the browser uses TensorFlow.js to compare new images against the precomputed dataset. The goal is to create a lightweight, client‑side tool capable of identifying visual similarities between images.
+This project was created for the multimedia artist **Aalma Lumière** and will be integrated into her official website:  
+https://www.aalmalumiere.it/
 
----
+Aalma Lumière is a multimedia artist whose research integrates painting, installation, and the written word. Her practice stems from an identity crisis that triggered a profound analysis of the complexity of the self and the fragmentation of the "I."
 
-## 🧠 Project Overview
+The work combines **painting, poetry, and interactive digital experience**.  
+Visitors can point their webcam at one of Aalma’s paintings, and the system:
 
-The workflow is divided into two main stages:
+- recognizes the artwork in real time  
+- triggers a poetic visual experience  
+- breaks the painting into fragments  
+- reveals the corresponding written piece  
+- handles special compositions (the “blue paintings”) with a 3×3 selection grid  
 
-### **1. Python (offline processing)**
-- A Python script loads images from a dataset.
-- A TensorFlow model (CPU version) generates embeddings.
-- The embeddings are exported into a JSON file (`embeddings.json`).
-- This file is later consumed by the browser.
-
-### **2. Browser (online comparison)**
-- A TensorFlow.js model computes embeddings for user‑uploaded images (webcam).
-- The browser compares these embeddings with the precomputed ones.
-- It returns the closest match and the distance score.
-
-This approach keeps the browser lightweight while allowing Python to handle the heavier preprocessing.
+The entire experience runs **client‑side**, directly in the browser.
 
 ---
 
-## 🔧 Python Virtual Environment
+## 🧠 How It Works
 
-All Python processing was performed inside a dedicated virtual environment named **`embeddings_env`**.  
-The environment itself is **not included in the repository** to avoid uploading large compiled libraries (such as TensorFlow DLLs).
+The project is built around a hybrid workflow:
 
-To recreate the environment:
+### **1. Offline Processing (Python)**
+A Python script generates **image embeddings** using TensorFlow (CPU version):
+
+- loads all paintings from `assets/paintings` and `assets/blue_paintings`
+- computes embeddings with MobileNetV2
+- exports them into `embeddings.json`
+
+This file is used by the browser for fast similarity search.
+
+### **2. Online Recognition (Browser)**
+The browser uses:
+
+- **TensorFlow.js** to compute embeddings from the webcam stream  
+- a custom **cosine similarity** matcher  
+- a stable detection system (1 second of consistent recognition)  
+- a special handler for the “blue compositions”  
+- a physics‑based breaking animation (canvas + particles)
+
+Everything runs locally — no server, no backend.
+
+---
+
+## 🎥 Features
+
+### ✔ Real‑time webcam recognition  
+The system identifies the closest painting using precomputed embeddings.
+
+### ✔ Stable detection  
+A painting must be recognized consistently for 1 second before triggering the experience.
+
+### ✔ Interactive experience  
+Once recognized:
+
+- the painting appears on screen  
+- it breaks into fragments using a physics simulation  
+- the corresponding poem fades in underneath  
+
+### ✔ Special case: Blue Compositions  
+If the recognized painting belongs to the “blue” series:
+
+- a 3×3 grid appears  
+- the visitor chooses the correct fragment  
+- **blu_11** is handled as a special case (no breaking animation)
+
+### ✔ Fully client‑side  
+No data is uploaded.  
+Everything runs in the browser.
+
+---
+
+## 📁 Project Structure
+
+/assets
+    /paintings
+    /blue_paintings
+    /poetry
+embeddings.json
+index.html
+style.css
+recognizer.js
+physics.js
+generate_embeddings.py
+requirements.txt
+
+---
+
+## 🔧 Python Environment
+
+To recreate the embedding environment:
 
 ```bash
 python -m venv embeddings_env
-embeddings_env\Scripts\activate
-```
-All required Python packages are listed in: requirements.txt. To install them :
-```bash
+source embeddings_env/bin/activate   # macOS / Linux
+embeddings_env\Scripts\activate      # Windows
 pip install -r requirements.txt
-```
+
+python generate_embeddings.py
 
