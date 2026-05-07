@@ -74,6 +74,7 @@ Everything runs in the browser.
 
 ## 📁 Project Structure
 
+```bash
 /assets
     /paintings
     /blue_paintings
@@ -85,6 +86,8 @@ recognizer.js
 physics.js
 generate_embeddings.py
 requirements.txt
+```
+
 
 ---
 
