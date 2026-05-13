@@ -227,6 +227,10 @@
 
         async function triggerExperience(name) {
             try {
+                // reset immagini per evitare glitch se si rientra nell'esperienza con la stessa opera
+                topImg.src = ""; 
+                bottomImg.src = "";
+
                 inExperience = true;
                 running = false;
 
