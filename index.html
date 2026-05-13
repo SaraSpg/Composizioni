@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 
 <head>
     <meta charset="UTF-8">
@@ -85,23 +85,26 @@
             });
         }
 
+        async function startCamera(deviceId = null) {
+            const constraints = deviceId
+                ? { video: { deviceId: { exact: deviceId } } }
+                : { video: { facingMode: "environment" } };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+            await video.play();
+        }
+
         async function loadCameras() {
+            // Necessario su mobile per sbloccare enumerateDevices
+            await navigator.mediaDevices.getUserMedia({ video: true });
+
             const devices = await navigator.mediaDevices.enumerateDevices();
             videoDevices = devices.filter(d => d.kind === "videoinput");
 
             if (videoDevices.length > 1) {
                 switchCamBtn.disabled = false;
             }
-        }
-
-        async function startCamera(deviceId = null) {
-            const constraints = {
-                video: deviceId ? { deviceId: { exact: deviceId } } : true
-            };
-
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = stream;
-            await video.play();
         }
 
         async function switchCamera() {
@@ -123,13 +126,13 @@
             status.textContent = "🎨 Loading model…";
             await initRecognizer();
 
-            status.textContent = "📷 Loading cameras…";
+            status.textContent = "📷 Starting webcam…";
+            await startCamera(); // apre la camera posteriore su mobile
+
+            status.textContent = "📷 Detecting cameras…";
             await loadCameras();
 
             currentDeviceId = videoDevices[0]?.deviceId || null;
-
-            status.textContent = "📷 Starting webcam…";
-            await startCamera(currentDeviceId);
 
             status.textContent = "✨ Ready! Click Start!";
             startBtn.disabled = false;

@@ -41,7 +41,7 @@ export function breakImage(img, canvas) {
   // ==========================
   const PIECE_SIZE = 11;
 
-  const GRAVITY = 0.1;
+  const GRAVITY = 0.15;
   const FRICTION = 0.99;
 
   const pieces = [];
