@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -23,6 +23,7 @@
             <div class="controls">
                 <button id="startBtn" disabled>Start</button>
                 <button id="stopBtn" disabled>Stop</button>
+                <button id="switchCamBtn" disabled>Switch Camera</button>
             </div>
 
         </div>
@@ -53,6 +54,7 @@
         const overlay = document.getElementById("overlay");
         const startBtn = document.getElementById("startBtn");
         const stopBtn = document.getElementById("stopBtn");
+        const switchCamBtn = document.getElementById("switchCamBtn");
         const status = document.getElementById("status");
         const videoBox = document.getElementById("videoBox");
 
@@ -67,6 +69,10 @@
         const STABLE_TIME = 1000;
         let inExperience = false;
 
+        // CAMERA MANAGEMENT
+        let currentDeviceId = null;
+        let videoDevices = [];
+
         function loadImage(img, src) {
             return new Promise((resolve) => {
                 img.onload = () => resolve(img);
@@ -75,27 +81,60 @@
                     img.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
                     resolve(img);
                 };
-                //img.src = src;
-                img.src = src + "?v=" + Date.now();  // cache-buster
+                img.src = src + "?v=" + Date.now();
             });
         }
 
-        async function startCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        async function loadCameras() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            videoDevices = devices.filter(d => d.kind === "videoinput");
+
+            if (videoDevices.length > 1) {
+                switchCamBtn.disabled = false;
+            }
+        }
+
+        async function startCamera(deviceId = null) {
+            const constraints = {
+                video: deviceId ? { deviceId: { exact: deviceId } } : true
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
             await video.play();
+        }
+
+        async function switchCamera() {
+            if (videoDevices.length < 2) return;
+
+            const currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+            const nextIndex = (currentIndex + 1) % videoDevices.length;
+
+            currentDeviceId = videoDevices[nextIndex].deviceId;
+
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(t => t.stop());
+            }
+
+            await startCamera(currentDeviceId);
         }
 
         async function loadEverything() {
             status.textContent = "🎨 Loading model…";
             await initRecognizer();
 
+            status.textContent = "📷 Loading cameras…";
+            await loadCameras();
+
+            currentDeviceId = videoDevices[0]?.deviceId || null;
+
             status.textContent = "📷 Starting webcam…";
-            await startCamera();
+            await startCamera(currentDeviceId);
 
             status.textContent = "✨ Ready! Click Start!";
             startBtn.disabled = false;
             stopBtn.disabled = false;
+            switchCamBtn.disabled = videoDevices.length < 2;
 
             videoBox.classList.remove("hidden");
             exp.classList.add("hidden");
@@ -117,14 +156,12 @@
 
                     if (Date.now() - stableStart > STABLE_TIME) {
 
-                        // Tutti i blu → selettore 3x3
                         if (result.bestName.startsWith("blu_") ||
                             result.bestName === "blu_full.jpg") {
                             triggerBluSelection();
                             return;
                         }
 
-                        // Altri quadri → esperienza normale
                         triggerExperience(result.bestName);
                         return;
                     }
@@ -291,6 +328,7 @@
 
         startBtn.addEventListener("click", startRecognition);
         stopBtn.addEventListener("click", stopRecognition);
+        switchCamBtn.addEventListener("click", switchCamera);
     </script>
 </body>
 

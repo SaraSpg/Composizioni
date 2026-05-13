@@ -39,7 +39,7 @@ export function breakImage(img, canvas) {
   // ==========================
   // CONFIG (più controllato)
   // ==========================
-  const PIECE_SIZE = 13;
+  const PIECE_SIZE = 11;
 
   const GRAVITY = 0.1;
   const FRICTION = 0.99;
