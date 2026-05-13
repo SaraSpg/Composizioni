@@ -130,9 +130,8 @@ button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
-
 /* =========================
-   EXPERIENCE LAYER (FIX DEFINITIVO)
+   EXPERIENCE LAYER
    ========================= */
 #experience {
     position: fixed;
@@ -148,33 +147,29 @@ button:disabled {
     overflow: hidden;
 }
 
-/* ===== SCENA CENTRATA ===== */
+/* Contenitore che garantisce stesse dimensioni */
 .experience-inner {
     position: relative;
 
-    width: min(70vw, 700px);
-    height: min(70vh, 700px);
+    width: min(90vw, 700px);
+    height: min(90vh, 700px);
 
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* =========================
-   IMMAGINI (NO STRETCH, NO FULL WIDTH)
-   ========================= */
+/* IMMAGINI E CANVAS: stessa dimensione, stesso box */
 #topImage,
-#bottomImage {
+#bottomImage,
+#breakCanvas {
     position: absolute;
+    inset: 0;
 
-    max-width: 100%;
-    max-height: 100%;
-
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
 
     object-fit: contain;
-
     border-radius: 12px;
 }
 
@@ -194,45 +189,58 @@ button:disabled {
     z-index: 2;
 }
 
-/* =========================
-   CANVAS 
-   ========================= */
+/* canvas */
 #breakCanvas {
-    position: absolute;
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-
-    pointer-events: none;
     z-index: 3;
+    pointer-events: none;
 }
-
+/* =========================
+   BLU SELECTOR
+   ========================= */
 #bluSelector {
     position: fixed;
     inset: 0;
+    z-index: 9999;
 
-    background: rgb(0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.9);
 
     display: flex;
     justify-content: center;
+    align-items: center;
 
-    align-items: flex-start;
-
-    padding-top: 10px;
-
-    z-index: 9999;
+    overflow: auto; /* permette scrolling su schermi piccoli o troppo grandi */
+    padding: 20px;
 }
 
+#bluContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    width: 100%;
+    max-width: 700px;
+}
+
+#bluTitle {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+/* MATRICE 3×3 RESPONSIVE */
 #bluGrid {
     display: grid;
-
     grid-template-columns: repeat(3, 1fr);
-
     gap: 12px;
 
-    width: min(60vw, 700px);
-    height: min(55vh, 500px);
+    width: 100%;
+    max-width: 600px;
+
+    /* garantisce che entri su mobile */
+    height: auto;
 }
 
 #bluGrid img {
@@ -240,37 +248,14 @@ button:disabled {
     aspect-ratio: 1 / 1;
 
     object-fit: contain;
-
-    /* background: #111; */
-
     border-radius: 10px;
 
     cursor: pointer;
-
     transition: transform 0.2s ease;
 }
 
 #bluGrid img:hover {
     transform: scale(1.03);
-}
-
-#bluContent {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-#bluTitle {
-    color: white;
-
-    font-size: 32px;
-    font-weight: bold;
-
-    margin-bottom: 8px;
-
-    letter-spacing: 1px;
-
-    text-transform: uppercase;
 }
 
 /* UTILS */

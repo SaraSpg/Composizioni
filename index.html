@@ -31,10 +31,13 @@
 
     <!-- EXPERIENCE -->
     <div id="experience" class="hidden">
-        <img id="topImage">
-        <img id="bottomImage">
-        <canvas id="breakCanvas"></canvas>
+        <div class="experience-inner">
+            <img id="topImage">
+            <img id="bottomImage">
+            <canvas id="breakCanvas"></canvas>
+        </div>
     </div>
+
 
     <!-- BLU SELECTOR -->
     <div id="bluSelector" class="hidden">
@@ -192,6 +195,7 @@
         function triggerBluSelection() {
             running = false;
             inExperience = true;
+            stableName = null; // reset stabile per evitare trigger accidentali al ritorno
 
             bluGrid.innerHTML = "";
 
