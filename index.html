@@ -89,18 +89,63 @@
         }
 
         async function startCamera(deviceId = null) {
-            const constraints = deviceId
-                ? { video: { deviceId: { exact: deviceId } } }
-                : { video: { facingMode: "environment" } };
+            try {
+                let constraints;
 
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = stream;
-            await video.play();
+                if (deviceId) {
+                    constraints = {
+                        video: {
+                            deviceId: { exact: deviceId }
+                        },
+                        audio: false
+                    };
+                } else {
+                    constraints = {
+                        video: {
+                            facingMode: { ideal: "environment" }
+                        },
+                        audio: false
+                    };
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                video.srcObject = stream;
+                await video.play();
+
+                return true;
+
+            } catch (err) {
+                console.warn("⚠️ getUserMedia failed, retrying with fallback:", err);
+
+                // FALLBACK universale
+                try {
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
+
+                    video.srcObject = fallbackStream;
+                    await video.play();
+
+                    return true;
+
+                } catch (err2) {
+                    console.error("❌ Camera failed completely:", err2);
+                    status.textContent = "❌ Camera not available on this device.";
+                    return false;
+                }
+            }
         }
 
+
         async function loadCameras() {
-            // Necessario su mobile per sbloccare enumerateDevices
-            await navigator.mediaDevices.getUserMedia({ video: true });
+            try {
+                // Sblocca enumerateDevices su iOS/Android
+                await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            } catch (e) {
+                console.warn("⚠️ Temporary camera unlock failed:", e);
+            }
 
             const devices = await navigator.mediaDevices.enumerateDevices();
             videoDevices = devices.filter(d => d.kind === "videoinput");
@@ -124,13 +169,17 @@
 
             await startCamera(currentDeviceId);
         }
-
         async function loadEverything() {
             status.textContent = "🎨 Loading model…";
             await initRecognizer();
 
             status.textContent = "📷 Starting webcam…";
-            await startCamera(); // apre la camera posteriore su mobile
+            const ok = await startCamera();  
+
+            if (!ok) {
+                status.textContent = "❌ Unable to access the camera on this device.";
+                return;
+            }
 
             status.textContent = "📷 Detecting cameras…";
             await loadCameras();
@@ -145,6 +194,7 @@
             videoBox.classList.remove("hidden");
             exp.classList.add("hidden");
         }
+
 
         async function loop() {
             if (!running || inExperience) return;
@@ -228,7 +278,7 @@
         async function triggerExperience(name) {
             try {
                 // reset immagini per evitare glitch se si rientra nell'esperienza con la stessa opera
-                topImg.src = ""; 
+                topImg.src = "";
                 bottomImg.src = "";
 
                 inExperience = true;
