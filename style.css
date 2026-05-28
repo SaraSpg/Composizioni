@@ -130,6 +130,7 @@ button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
 /* =========================
    EXPERIENCE LAYER
    ========================= */
@@ -194,6 +195,7 @@ button:disabled {
     z-index: 3;
     pointer-events: none;
 }
+
 /* =========================
    BLU SELECTOR
    ========================= */
@@ -208,7 +210,8 @@ button:disabled {
     justify-content: center;
     align-items: center;
 
-    overflow: auto; /* permette scrolling su schermi piccoli o troppo grandi */
+    overflow: auto;
+    /* permette scrolling su schermi piccoli o troppo grandi */
     padding: 20px;
 }
 
@@ -257,6 +260,26 @@ button:disabled {
 #bluGrid img:hover {
     transform: scale(1.03);
 }
+
+.manual-trigger {
+    display: block;
+    margin: 50px auto 0 auto;
+    padding: 5px 15px;
+    font-size: 16px;
+    background: #7a7a7a;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: 0.2s;
+}
+
+.manual-trigger:hover {
+    opacity: 1;
+}
+
+
 
 /* UTILS */
 .hidden {

@@ -26,6 +26,11 @@
                 <button id="switchCamBtn" disabled>Switch Camera</button>
             </div>
 
+
+            <button id="manualTriggerBtn" class="manual-trigger">
+                Click here if the camera is not working
+            </button>
+
         </div>
     </main>
 
@@ -46,6 +51,8 @@
             <div id="bluGrid"></div>
         </div>
     </div>
+
+
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 
@@ -174,7 +181,7 @@
             await initRecognizer();
 
             status.textContent = "📷 Starting webcam…";
-            const ok = await startCamera();  
+            const ok = await startCamera();
 
             if (!ok) {
                 status.textContent = "❌ Unable to access the camera on this device.";
@@ -277,7 +284,7 @@
 
         async function triggerExperience(name) {
             try {
-                // reset immagini per evitare glitch se si rientra nell'esperienza con la stessa opera
+                // reset immagini per evitare glitch
                 topImg.src = "";
                 bottomImg.src = "";
 
@@ -303,18 +310,30 @@
                 await wait(1200);
 
                 startBreakAnimation();
-
                 bottomImg.classList.add("show");
 
-                await wait(7000);
+                // TIMER + CLICK PER USCIRE
+                let finished = false;
 
-                resetExperience();
+                const endExperience = () => {
+                    if (finished) return;
+                    finished = true;
+                    exp.removeEventListener("click", endExperience);
+                    resetExperience();
+                };
+
+                // chiudi dopo 11 secondi
+                const timeout = setTimeout(endExperience, 11000);
+
+                // chiudi se l’utente clicca
+                exp.addEventListener("click", endExperience);
 
             } catch (err) {
                 console.error("❌ Crash experience:", err);
                 resetExperience();
             }
         }
+
 
         function showBlu11WithoutPhysics() {
             inExperience = true;
@@ -390,6 +409,16 @@
         startBtn.addEventListener("click", startRecognition);
         stopBtn.addEventListener("click", stopRecognition);
         switchCamBtn.addEventListener("click", switchCamera);
+
+        document.getElementById("manualTriggerBtn").onclick = () => {
+            console.log("Manual trigger activated");
+            running = false;
+            inExperience = true;
+            triggerBluSelection();
+        };
+
+
+
     </script>
 </body>
 
